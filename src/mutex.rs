@@ -1,64 +1,40 @@
-mod mutex_wasm_abi {
-    #[link(name = "harness")]
+use parking_lot::{lock_api::{self, Mutex}, RawMutex};
+
+mod lock_wasm_abi {
+    #[link(wasm_import_module = "wasm_ca")]
     unsafe extern "C" {
-        #[link_name = "wasm_ca_begin_lock"]
-        pub fn begin_lock(mutex_id: i32);
-
-        #[link_name = "wasm_ca_finish_lock"]
-        pub fn finsh_lock(mutex_id: i32);
-
-        #[link_name = "wasm_ca_begin_unlock"]
-        pub fn begin_unlock(mutex_id: i32);
-
-        #[link_name = "wasm_ca_finish_unlock"]
-        pub fn finsh_unlock(mutex_id: i32);
+        pub fn start_lock(lock_id: usize);
+        pub fn finish_lock(lock_id: usize);
+        pub fn start_unlock(lock_id: usize);
+        pub fn finish_unlock(lock_id: usize);
     }
 }
 
-pub fn begin_lock(mutex_id: i32) {
-    unsafe { mutex_wasm_abi::begin_lock(mutex_id); }
+pub struct TracingRawMutex {
+    inner: RawMutex
 }
 
-pub fn finsh_lock(mutex_id: i32) {
-    unsafe { mutex_wasm_abi::finsh_lock(mutex_id); }
+unsafe impl lock_api::RawMutex for TracingRawMutex {
+    #[allow(clippy::declare_interior_mutable_const)]
+    const INIT: Self = Self { inner: RawMutex::INIT };
+
+    type GuardMarker = <parking_lot::RawMutex as parking_lot::lock_api::RawMutex>::GuardMarker;
+
+    fn lock(&self) {
+        unsafe { lock_wasm_abi::start_lock(self as *const _ as usize); }
+        self.inner.lock();
+        unsafe { lock_wasm_abi::finish_lock(self as *const _ as usize); }
+    }
+
+    fn try_lock(&self) -> bool {
+        self.inner.try_lock()
+    }
+
+    unsafe fn unlock(&self) {
+        unsafe { lock_wasm_abi::start_unlock(self as *const _ as usize); }
+        self.inner.unlock();
+        unsafe { lock_wasm_abi::finish_unlock(self as *const _ as usize); }
+    }
 }
 
-pub fn begin_unlock(mutex_id: i32) {
-    unsafe { mutex_wasm_abi::begin_unlock(mutex_id); }
-}
-
-pub fn finsh_unlock(mutex_id: i32) {
-    unsafe { mutex_wasm_abi::finsh_unlock(mutex_id); }
-}
-
-/*
-#[export_name = "wasm_ca_begin_acquisition"]
-fn begin_acquisition_stub() {
-    panic!("This function is a stub and should have been replaced by instrumentation!")
-}
-
-#[export_name = "wasm_ca_cancel_acquisition"]
-fn cancel_acquisition_stub() {
-    panic!("This function is a stub and should have been replaced by instrumentation!")
-}
-
-#[export_name = "wasm_ca_finish_acquisition"]
-fn finish_acquisition_stub() {
-    panic!("This function is a stub and should have been replaced by instrumentation!")
-}
-
-
-#[export_name = "wasm_ca_begin_release"]
-fn begin_release_stub() {
-    panic!("This function is a stub and should have been replaced by instrumentation!")
-}
-
-#[export_name = "wasm_ca_cancel_release"]
-fn cancel_release_stub() {
-    panic!("This function is a stub and should have been replaced by instrumentation!")
-}
-
-#[export_name = "wasm_ca_finish_release"]
-fn finish_release_stub() {
-    panic!("This function is a stub and should have been replaced by instrumentation!")
-}*/
+pub type TracingMutex<T> = Mutex<TracingRawMutex, T>;
