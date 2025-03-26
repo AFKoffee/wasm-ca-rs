@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::{LazyLock, Mutex}};
+use std::{
+    collections::HashMap,
+    sync::{LazyLock, Mutex},
+};
 
 mod thread_wasm_abi {
     #[link(wasm_import_module = "wasm_ca")]
@@ -15,11 +18,15 @@ struct WorkMonitor {
 
 impl WorkMonitor {
     fn new() -> Self {
-        Self { map: HashMap::new(), key_counter: u32::MIN, free_list: Vec::new() }
+        Self {
+            map: HashMap::new(),
+            key_counter: u32::MIN,
+            free_list: Vec::new(),
+        }
     }
 
-    fn insert<F>(&mut self, closure: F) -> u32 
-    where 
+    fn insert<F>(&mut self, closure: F) -> u32
+    where
         F: FnOnce() + Send + 'static,
     {
         let key = self.free_list.pop().unwrap_or_else(|| {
@@ -27,14 +34,13 @@ impl WorkMonitor {
             self.key_counter += 1;
             key
         });
-        
+
         self.map.insert(key, Box::new(closure));
 
         key
     }
 
-    fn execute(&mut self, key: u32) -> Option<()>
-    {
+    fn execute(&mut self, key: u32) -> Option<()> {
         if let Some(closure) = self.map.remove(&key) {
             self.free_list.push(key);
             closure();
@@ -45,9 +51,8 @@ impl WorkMonitor {
     }
 }
 
-static WORK_MONITOR: LazyLock<Mutex<WorkMonitor>> = LazyLock::new(|| {
-    Mutex::new(WorkMonitor::new())
-});
+static WORK_MONITOR: LazyLock<Mutex<WorkMonitor>> =
+    LazyLock::new(|| Mutex::new(WorkMonitor::new()));
 
 #[export_name = "wasm_ca_thread_entrypoint"]
 pub extern "C" fn thread_entrypoint(work_id: u32) {
