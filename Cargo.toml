@@ -1,5 +1,5 @@
 [package]
-name = "wasm-ca-rs"
+name = "wasm_ca_rs"
 version = "0.1.0"
 edition = "2021"
 
