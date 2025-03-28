@@ -55,7 +55,7 @@ static WORK_MONITOR: LazyLock<Mutex<WorkMonitor>> =
     LazyLock::new(|| Mutex::new(WorkMonitor::new()));
 
 #[export_name = "wasm_ca_thread_entrypoint"]
-pub extern "C" fn thread_entrypoint(work_id: u32) {
+extern "C" fn thread_entrypoint(work_id: u32) {
     if WORK_MONITOR.lock().unwrap().execute(work_id).is_none() {
         // TODO: Properly handle this! E.g.: Return an error code or sth.
         panic!("Work ID {work_id} did not have a function associated to it!")
