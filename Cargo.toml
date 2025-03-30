@@ -3,8 +3,12 @@ name = "wasm-ca-rs"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+wbg = ["dep:wasm-bindgen"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-parking_lot = "0.12.3"
+parking_lot = { version = "0.12.3", features = ["nightly"] }
+wasm-bindgen = { version = "0.2.100", optional = true }
