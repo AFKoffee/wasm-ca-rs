@@ -3,12 +3,22 @@ name = "wasm-ca-rs"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-wbg = ["dep:wasm-bindgen"]
-
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+js-sys = "0.3.77"
 parking_lot = { version = "0.12.3", features = ["nightly"] }
-wasm-bindgen = { version = "0.2.100", optional = true }
+wasm-bindgen = { version = "0.2.100" }
+
+[dependencies.web-sys]
+version = "0.3.77"
+features = [
+    "Blob",
+    "BlobPropertyBag",
+    "MessageEvent",
+    "Url",
+    "Worker",
+    "WorkerOptions",
+    "WorkerType",
+]

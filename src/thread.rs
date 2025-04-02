@@ -1,102 +1,35 @@
-use std::{
-    collections::HashMap,
-    sync::{LazyLock, Mutex},
-};
+use std::{any::Any, cell::LazyCell, sync::atomic::{AtomicU32, Ordering}};
 
-#[cfg(not(feature = "wbg"))]
-mod thread_wasm_abi {
-    #[link(wasm_import_module = "wasm_ca")]
-    unsafe extern "C" {
-        pub fn thread_spawn(work_id: u32);
-    }
+mod message;
+mod worker_handle;
 
-    #[export_name = "wasm_ca_thread_entrypoint"]
-    extern "C" fn thread_entrypoint(work_id: u32) {
-        if let Some(work) = super::retrieve_work(work_id) {
-            work()
-        } else {
-            panic!("Work ID {work_id} did not have a function associated to it!")
-        };
+static THREAD_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+fn next_available_thread_id() -> u32 {
+    THREAD_ID_COUNTER.fetch_add(1, Ordering::Relaxed)
+}
+
+thread_local! {
+    static THREAD_ID: LazyCell<u32> = LazyCell::new(next_available_thread_id)
+}
+
+
+pub trait Task<T: Send + 'static>: FnOnce() -> T + Send + 'static {}
+
+pub struct JoinHandle<T> {
+    __: T,
+}
+
+impl<T> JoinHandle<T> {
+    pub fn join(self) -> Result<T, Box<dyn Any + Send + 'static>> {
+        unimplemented!("join() not yet implemented!")
     }
 }
 
-#[cfg(feature = "wbg")]
-mod thread_wasm_abi {
-    use wasm_bindgen::prelude::*;
-
-    #[wasm_bindgen(module = "/wasm_ca.js")]
-    extern "C" {
-        #[wasm_bindgen(js_name = thread_spawn)]
-        pub fn thread_spawn_inner(work_id: u32, module: JsValue, memory: JsValue);
-    }
-
-    pub fn thread_spawn(work_id: u32) {
-        thread_spawn_inner(work_id, wasm_bindgen::module(), wasm_bindgen::memory());
-    }
-
-    #[wasm_bindgen(js_name = "wasm_ca_thread_entrypoint")]
-    pub fn thread_entrypoint(work_id: u32) {
-        if let Some(work) = super::retrieve_work(work_id) {
-            work()
-        } else {
-            panic!("Work ID {work_id} did not have a function associated to it!")
-        };
-    }
+pub fn thread_spawn<F: Task<T>, T: Send + 'static>(f: F) -> JoinHandle<T> {
+    unimplemented!("thread_spawn() is not yet implemented!");
 }
 
-struct WorkMonitor {
-    map: HashMap<u32, Box<dyn FnOnce() + Send + 'static>>,
-    key_counter: u32,
-    free_list: Vec<u32>,
-}
-
-impl WorkMonitor {
-    fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-            key_counter: u32::MIN,
-            free_list: Vec::new(),
-        }
-    }
-
-    fn insert<F>(&mut self, closure: F) -> u32
-    where
-        F: FnOnce() + Send + 'static,
-    {
-        let key = self.free_list.pop().unwrap_or_else(|| {
-            let key = self.key_counter;
-            self.key_counter += 1;
-            key
-        });
-
-        self.map.insert(key, Box::new(closure));
-
-        key
-    }
-
-    fn retrieve(&mut self, key: u32) -> Option<Box<dyn FnOnce() + Send + 'static>> {
-        if let Some(closure) = self.map.remove(&key) {
-            self.free_list.push(key);
-            Some(closure)
-        } else {
-            None
-        }
-    }
-}
-
-static WORK_MONITOR: LazyLock<Mutex<WorkMonitor>> =
-    LazyLock::new(|| Mutex::new(WorkMonitor::new()));
-
-fn retrieve_work(key: u32) -> Option<Box<dyn FnOnce() + Send + 'static>> {
-    WORK_MONITOR.lock().unwrap().retrieve(key)
-}
-
-pub fn thread_spawn<F: FnOnce() + Send + 'static>(start_routine: F) {
-    let id = WORK_MONITOR.lock().unwrap().insert(start_routine);
-    
-    #[cfg(not(feature = "wbg"))]
-    unsafe { thread_wasm_abi::thread_spawn(id) };
-
-    #[cfg(feature = "wbg")]
-    thread_wasm_abi::thread_spawn(id);
+pub fn thread_id() -> u32 {
+    THREAD_ID.try_with(|id| **id).expect("Thread ID has been deallocated early!")
 }

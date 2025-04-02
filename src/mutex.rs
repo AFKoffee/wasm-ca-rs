@@ -3,18 +3,8 @@ use parking_lot::{
     RawMutex,
 };
 
-#[cfg(not(feature = "wbg"))]
-mod lock_wasm_abi {
-    #[link(wasm_import_module = "wasm_ca")]
-    unsafe extern "C" {
-        pub fn start_lock(lock_id: usize);
-        pub fn finish_lock(lock_id: usize);
-        pub fn start_unlock(lock_id: usize);
-        pub fn finish_unlock(lock_id: usize);
-    }
-}
+use crate::tracing;
 
-#[cfg(feature = "wbg")]
 mod lock_wasm_abi {
     use wasm_bindgen::prelude::*;
 
@@ -25,7 +15,7 @@ mod lock_wasm_abi {
 
         #[wasm_bindgen]
         pub fn finish_lock(lock_id: usize);
-        
+
         #[wasm_bindgen]
         pub fn start_unlock(lock_id: usize);
 
@@ -47,23 +37,11 @@ unsafe impl lock_api::RawMutex for TracingRawMutex {
     type GuardMarker = <parking_lot::RawMutex as parking_lot::lock_api::RawMutex>::GuardMarker;
 
     fn lock(&self) {
-        #[cfg(not(feature = "wbg"))]
-        unsafe {
-            lock_wasm_abi::start_lock(self as *const _ as usize);
-        }
-        
-        #[cfg(feature = "wbg")]
         lock_wasm_abi::start_lock(self as *const _ as usize);
 
         self.inner.lock();
 
-        #[cfg(feature = "wbg")]
         lock_wasm_abi::finish_lock(self as *const _ as usize);
-
-        #[cfg(not(feature = "wbg"))]
-        unsafe {
-            lock_wasm_abi::finish_lock(self as *const _ as usize);
-        }
     }
 
     fn try_lock(&self) -> bool {
@@ -71,23 +49,11 @@ unsafe impl lock_api::RawMutex for TracingRawMutex {
     }
 
     unsafe fn unlock(&self) {
-        #[cfg(not(feature = "wbg"))]
-        unsafe {
-            lock_wasm_abi::start_unlock(self as *const _ as usize);
-        }
-
-        #[cfg(feature = "wbg")]
         lock_wasm_abi::start_unlock(self as *const _ as usize);
 
         self.inner.unlock();
 
-        #[cfg(feature = "wbg")]
         lock_wasm_abi::finish_unlock(self as *const _ as usize);
-
-        #[cfg(not(feature = "wbg"))]
-        unsafe {
-            lock_wasm_abi::finish_unlock(self as *const _ as usize);
-        }
     }
 }
 
