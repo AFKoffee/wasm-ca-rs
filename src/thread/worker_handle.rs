@@ -36,7 +36,7 @@ impl WorkerHandle {
         Ok(handle)
     }
 
-    pub fn execute<F: FnOnce() + Send + 'static>(&self, f: F) -> Result<(), Error> {
+    pub fn execute<F: FnOnce() /* TODO: Evaluate if we should put this in again ==> + Send + 'static */>(&self, f: F) -> Result<(), Error> {
         // Todo: Properly deallocate the f_ptr in case of an error!
         self.worker.post_message(
             &MsgToWorker::Init {

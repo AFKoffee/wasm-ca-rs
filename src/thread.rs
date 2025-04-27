@@ -1,4 +1,8 @@
-use std::{any::Any, cell::LazyCell, sync::atomic::{AtomicU32, Ordering}};
+use std::{any::Any, cell::{LazyCell, RefCell, UnsafeCell}, panic, sync::{atomic::{AtomicU32, Ordering}, Arc}};
+
+use worker_handle::WorkerHandle;
+
+use crate::error::Error;
 
 mod message;
 mod worker_handle;
@@ -17,13 +21,37 @@ thread_local! {
 pub trait Task<T: Send + 'static>: FnOnce() -> T + Send + 'static {}
 
 pub struct JoinHandle<T> {
-    __: T,
+    native: WorkerHandle,
+    result: Arc<UnsafeCell<Option<Result<T, Box<dyn Any + Send>>>>>
 }
 
 impl<T> JoinHandle<T> {
     pub fn join(self) -> Result<T, Box<dyn Any + Send + 'static>> {
         unimplemented!("join() not yet implemented!")
     }
+}
+
+fn thread_spawn_inner<F: Task<T>, T: Send + 'static>(f: F) -> Result<JoinHandle<T>, Error> {
+    let read_loc = Arc::new(UnsafeCell::new(None));
+    let write_loc = read_loc.clone();
+    let run = move || {
+        // TODO: How to pass the thread ID?
+
+
+        // TODO: Maybe this can be omitted by using the trait boundary for UnwindSafe
+        let try_result = panic::catch_unwind(panic::AssertUnwindSafe(f));
+
+        // SAFETY: `write_loc` has been defined just above and moved by the closure (being an Arc<...>).
+        // `read_loc` is only given to the returned JoinHandle so the modification will not affect 
+        // some values far away.
+        unsafe { *write_loc.get() = Some(try_result); }
+
+        // TODO: How to signal that the thread is ready?
+    };
+    
+    let thread = WorkerHandle::spawn()?;
+    thread.execute(run)?;
+    Ok(JoinHandle { native: thread, result: read_loc })
 }
 
 pub fn thread_spawn<F: Task<T>, T: Send + 'static>(f: F) -> JoinHandle<T> {
