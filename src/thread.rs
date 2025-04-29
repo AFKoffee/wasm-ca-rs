@@ -56,6 +56,14 @@ struct ThreadInternals<T> {
     finished: AtomicBool,
 }
 
+// SAFTETY: Same reasoning as in the Rust std library:
+//
+// Due to the usage of `UnsafeCell` we need to manually implement Sync.
+// The type `T` should already always be Send (otherwise the thread could not
+// have been created) and the ThreadInternals struct is Sync because all access to the
+// `UnsafeCell` synchronized (by the `join()` boundary).
+unsafe impl<T: Send> Sync for ThreadInternals<T> {}
+
 impl<T> ThreadInternals<T> {
     fn new() -> Self {
         Self {
@@ -97,7 +105,7 @@ impl<T> ThreadInternals<T> {
 fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F) -> Result<JoinHandle<T>, Error> {
     let read_internals = Arc::new(ThreadInternals::new());
     let write_internals = read_internals.clone();
-    let run = move || {
+    let main = move || {
         // TODO: Remove the panics and find a better solution!
         let old_id_state = THREAD_ID
             .try_with(|id_cell| id_cell.replace(Some(write_internals.tid())))
@@ -122,8 +130,23 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F
         drop(write_internals); // We drop explicitly here just to make clearer whats going on ...
     };
 
+    let main = Box::new(main);
+    // SAFETY: dynamic size and alignment of the Box remain the same. The lifetime change is
+    // justified, because the closure is passed over a ffi-boundary (in this case to JScript)
+    // into a WebWorker, where there is no way to enforce lifetimes of the closure.
+    // 
+    // The caller of this function has to ensure, that the thread will not outlive any variables
+    // bound by the closure (or the reference to the closure itself). This is enforced statically
+    // by the 'static trait bound of the public `thread_spawn()` function.
+    //
+    // The thread execution mechanism inside the WebWorker has to ensure, that there are no
+    // references to the closure after the thread has terminated (when `join()` returns).
+    let main =
+            unsafe { Box::from_raw(Box::into_raw(main) as *mut (dyn FnOnce() + Send + 'static)) };
+
+    
     let thread = WorkerHandle::spawn()?;
-    thread.execute(run)?;
+    thread.run(main)?;
     Ok(JoinHandle {
         native: thread,
         internals: read_internals,

@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
 use js_sys::{Array, Uint8Array};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::error::Error;
 
@@ -19,6 +20,22 @@ static WORKER_URL: LazyLock<String> = LazyLock::new(|| {
     web_sys::Url::create_object_url_with_blob(&blob).unwrap()
 });
 
+struct Work {
+    func: Box<dyn FnOnce() + Send + 'static>,
+}
+
+impl Work {
+    fn new<F: FnOnce() + Send + 'static>(f: F) -> Self {
+        Self {
+            func: Box::new(f)
+        }
+    }
+
+    fn execute(self) {
+        (self.func)()
+    }
+}
+
 pub struct WorkerHandle {
     worker: web_sys::Worker,
 }
@@ -36,8 +53,8 @@ impl WorkerHandle {
         Ok(handle)
     }
 
-    pub fn execute<
-        F: FnOnce(), /* TODO: Evaluate if we should put this in again ==> + Send + 'static */
+    pub fn run<
+        F: FnOnce() + Send + 'static, /* TODO: Evaluate if we should put this in again ==> + Send + 'static */
     >(
         &self,
         f: F,
@@ -46,7 +63,7 @@ impl WorkerHandle {
         self.worker
             .post_message(
                 &MsgToWorker::Init {
-                    f_ptr: Box::into_raw(Box::new(f)) as usize,
+                    f_ptr: Box::into_raw(Box::new(Work::new(f))) as usize,
                 }
                 .try_to_js()
                 .map_err(Error::from)?,
@@ -58,6 +75,19 @@ impl WorkerHandle {
         // TODO: Thread Local Storage should be deinitialized manually ...
         self.worker.terminate();
     }
+}
+
+#[wasm_bindgen(js_name = "handle_msg")]
+pub fn handle_js_message(msg: JsValue) -> Result<(), JsValue> {
+    match MsgToWorker::try_from_js(msg)? {
+        MsgToWorker::Init {f_ptr} => execute_work(f_ptr),
+    }
+    Ok(())
+}
+
+fn execute_work(f_ptr: usize) {
+    let f = unsafe { Box::from_raw(f_ptr as *mut Work) };
+    f.execute();
 }
 
 /*impl Drop for WorkerHandle {

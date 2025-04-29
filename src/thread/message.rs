@@ -1,4 +1,4 @@
-use js_sys::{JsString, Object, Reflect};
+use js_sys::{BigInt, JsString, Number, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 
 pub enum MsgToWorker {
@@ -14,11 +14,26 @@ impl MsgToWorker {
                 Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("init"))?;
                 Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
                 Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
-                Reflect::set(&msg, &JsValue::from_str("task"), &JsValue::from(f_ptr))?;
+                Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
             }
         };
 
         Ok(msg.into())
+    }
+
+    pub fn try_from_js(msg: JsValue) -> Result<Self, JsValue> {
+        let ty: String = Reflect::get(&msg, &JsValue::from_str("type"))?
+            .dyn_into::<JsString>()?
+            .into();
+
+        match ty.as_str() {
+            "init" => {
+                let addr = Reflect::get(&msg, &JsValue::from_str("task"))?
+                    .dyn_into::<BigInt>()?;
+                Ok(MsgToWorker::Init { f_ptr: u64::try_from(addr)? as usize })
+            },
+            _ => panic!("Message from worker had an unknown type!"),
+        }
     }
 }
 

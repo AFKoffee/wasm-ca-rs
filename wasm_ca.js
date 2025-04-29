@@ -1,4 +1,4 @@
-let THREAD_REGISTRY = new Map();
+/*let THREAD_REGISTRY = new Map();
 let THREAD_COUNTER = 1; // THREAD_ID 0 is reserved to refer to the initial thread
 
 function register_thread(worker_handle) {
@@ -60,7 +60,7 @@ function thread_spawn(job_id, module, memory) {
     } else {
         self.postMessage({code: 10, payload: {thread_id: self.WASM_CA_TID, job_id, module, memory}})
     }
-}
+}*/
 
 function start_lock(lock_id) {
     console.log("Thread ", self.WASM_CA_TID, " requested lock ", lock_id);
@@ -78,4 +78,4 @@ function finish_unlock(lock_id) {
     console.log("Thread ", self.WASM_CA_TID, " finished to release lock ", lock_id);
 }
 
-export {thread_spawn, start_lock, finish_lock, start_unlock, finish_unlock};
+export {/*thread_spawn, */start_lock, finish_lock, start_unlock, finish_unlock};
