@@ -16,6 +16,8 @@ version = "0.3.77"
 features = [
     "Blob",
     "BlobPropertyBag",
+    "Document",
+    "Location",
     "MessageEvent",
     "Url",
     "Worker",

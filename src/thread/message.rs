@@ -11,10 +11,17 @@ impl MsgToWorker {
 
         match self {
             MsgToWorker::Init { f_ptr } => {
-                Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("init"))?;
-                Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
-                Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
-                Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
+                if let Some(location) = web_sys::Document::new()?.location() {
+                    let mut url = location.protocol()?;
+                    url.push_str("//");
+                    url.push_str(&location.host()?);
+
+                    Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("init"))?;
+                    Reflect::set(&msg, &JsValue::from_str("url"), &JsValue::from_str(&url))?;
+                    Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
+                    Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
+                    Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
+                }
             }
         };
 

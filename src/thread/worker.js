@@ -4,9 +4,9 @@ console.log("JScript: initializing standalone worker")
 // it, initialize it all with the 'wasm_bindgen' global we imported via
 // 'importScripts'.
 self.onmessage = async event => {
-    let {type, module, memory, task} = event.data;
+    let {type, url, module, memory, task} = event.data;
     
-    let {default: init} = await import('/pkg/playground.js');
+    let {default: init} = await import(url + '/pkg/playground.js');
     let wasm = await init(module, memory);
     wasm.handle_msg({type, task})
 
