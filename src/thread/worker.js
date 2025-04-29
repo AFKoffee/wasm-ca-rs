@@ -6,9 +6,9 @@ console.log("JScript: initializing standalone worker")
 self.onmessage = async event => {
     let {type, module, memory, task} = event.data;
     
-    let {default: init} = await import(url + '/pkg/playground.js');
+    let {default: init} = await import('/pkg/playground.js');
     let wasm = await init(module, memory);
-    wasm.wasm_ca_thread_entrypoint(task);
+    wasm.handle_msg({type, task})
 
     console.log("JScript: Worker ", thread_id, " finished its job!");
 }
