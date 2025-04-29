@@ -3,8 +3,6 @@ use parking_lot::{
     RawMutex,
 };
 
-use crate::tracing;
-
 mod lock_wasm_abi {
     use wasm_bindgen::prelude::*;
 

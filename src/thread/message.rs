@@ -10,12 +10,12 @@ impl MsgToWorker {
         let msg = Object::new();
 
         match self {
-            MsgToWorker::Init { f_ptr} => {
+            MsgToWorker::Init { f_ptr } => {
                 Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("init"))?;
                 Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
                 Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
                 Reflect::set(&msg, &JsValue::from_str("task"), &JsValue::from(f_ptr))?;
-            },
+            }
         };
 
         Ok(msg.into())
@@ -23,7 +23,7 @@ impl MsgToWorker {
 }
 
 pub enum MsgFromWorker {
-    Close
+    Close,
 }
 
 impl MsgFromWorker {

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use wasm_bindgen::{JsCast, JsValue};
 
-
+#[derive(Debug)]
 pub enum Error {
     JsError(String),
     InvalidHandle(String),
