@@ -1,6 +1,8 @@
 use js_sys::{BigInt, JsString, Number, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 
+use crate::error::Error;
+
 pub enum MsgToWorker {
     Init { f_ptr: usize },
 }
@@ -21,6 +23,8 @@ impl MsgToWorker {
                     Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
                     Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
                     Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
+                } else {
+                    return Err(JsValue::from_str("Could not retrieve location for current document!"))
                 }
             }
         };
