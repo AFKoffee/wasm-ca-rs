@@ -25,8 +25,6 @@ thread_local! {
     static THREAD_ID: Cell<Option<u32>> = const { Cell::new(None) };
 }
 
-pub trait Task<T: Send + 'static>: FnOnce() -> T + Send + 'static {}
-
 pub struct JoinHandle<T> {
     native: WorkerHandle,
     internals: Arc<ThreadInternals<T>>,
@@ -96,7 +94,7 @@ impl<T> ThreadInternals<T> {
     }
 }
 
-fn thread_spawn_inner<F: Task<T>, T: Send + 'static>(f: F) -> Result<JoinHandle<T>, Error> {
+fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F) -> Result<JoinHandle<T>, Error> {
     let read_internals = Arc::new(ThreadInternals::new());
     let write_internals = read_internals.clone();
     let run = move || {
@@ -132,7 +130,7 @@ fn thread_spawn_inner<F: Task<T>, T: Send + 'static>(f: F) -> Result<JoinHandle<
     })
 }
 
-pub fn thread_spawn<F: Task<T>, T: Send + 'static>(f: F) -> JoinHandle<T> {
+pub fn thread_spawn<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F) -> JoinHandle<T> {
     thread_spawn_inner(f).expect("Thread creation failed!")
 }
 
