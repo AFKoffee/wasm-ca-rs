@@ -62,20 +62,20 @@ function thread_spawn(job_id, module, memory) {
     }
 }*/
 
-function start_lock(lock_id) {
-    console.log("Thread ", self.WASM_CA_TID, " requested lock ", lock_id);
+function start_lock(thread_id, lock_id) {
+    console.log("Thread ", thread_id, " requested lock ", lock_id);
 }
 
-function finish_lock(lock_id) {
-    console.log("Thread ", self.WASM_CA_TID, " aquired lock ", lock_id);
+function finish_lock(thread_id, lock_id) {
+    console.log("Thread ", thread_id, " aquired lock ", lock_id);
 }
 
-function start_unlock(lock_id) {
-    console.log("Thread ", self.WASM_CA_TID, " started to release lock ", lock_id);
+function start_unlock(thread_id, lock_id) {
+    console.log("Thread ", thread_id, " started to release lock ", lock_id);
 }
 
-function finish_unlock(lock_id) {
-    console.log("Thread ", self.WASM_CA_TID, " finished to release lock ", lock_id);
+function finish_unlock(thread_id, lock_id) {
+    console.log("Thread ", thread_id, " finished to release lock ", lock_id);
 }
 
 export {/*thread_spawn, */start_lock, finish_lock, start_unlock, finish_unlock};
