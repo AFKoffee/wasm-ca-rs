@@ -5,7 +5,6 @@ use wasm_bindgen::{JsCast, JsValue};
 #[derive(Debug)]
 pub enum Error {
     JsError(String),
-    InvalidHandle(String),
 }
 
 impl From<&JsValue> for Error {
@@ -32,7 +31,6 @@ impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::JsError(e) => write!(f, "{e}"),
-            Error::InvalidHandle(e) => write!(f, "{e}"),
         }
     }
 }

@@ -10,7 +10,7 @@ use std::{
 
 use worker_handle::WorkerHandle;
 
-use crate::error::Error;
+use crate::{console_log, error::Error};
 
 mod message;
 mod worker_handle;
@@ -28,22 +28,25 @@ thread_local! {
 pub struct JoinHandle<T> {
     native: WorkerHandle,
     internals: Arc<ThreadInternals<T>>,
+    finished: Arc<AtomicBool>,
 }
 
 impl<T> JoinHandle<T> {
     pub fn join(mut self) -> Result<T, Box<dyn Any + Send + 'static>> {
-        while !self.internals.is_finished() {}
+        while !self.finished.load(Ordering::Relaxed) {}
         if let Some(internals_mut) = Arc::get_mut(&mut self.internals) {
             if let Some(result) = internals_mut.take_result() {
                 // Terminate the WebWorker (has to be done manually)
-                self.native.terminate();
+                self.native.terminate().expect("Could not terminate worker!");
 
                 result
             } else {
-                panic!("Thread was marked as finished without having a result set!")
+                console_log!("Thread was marked as finished without having a result set!");
+                panic!();
             }
         } else {
-            panic!("Thread was marked as finished but had more than one reference to the result struct!")
+            console_log!("Thread was marked as finished but had more than one reference to the result struct!");
+            panic!();
         }
     }
 }
@@ -53,7 +56,6 @@ pub type ThreadResult<T> = Result<T, Box<dyn Any + Send>>;
 struct ThreadInternals<T> {
     tid: u32,
     result: UnsafeCell<Option<ThreadResult<T>>>,
-    finished: AtomicBool,
 }
 
 // SAFTETY: Same reasoning as in the Rust std library:
@@ -69,7 +71,6 @@ impl<T> ThreadInternals<T> {
         Self {
             tid: next_available_thread_id(),
             result: UnsafeCell::new(None),
-            finished: AtomicBool::new(false),
         }
     }
 
@@ -88,23 +89,15 @@ impl<T> ThreadInternals<T> {
     fn take_result(&mut self) -> Option<ThreadResult<T>> {
         self.result.get_mut().take()
     }
-
-    // Marks the thread as being finished.
-    //
-    // This function should only be called when the result has been writen
-    // because this acts as a signal for the JoinHandle to access the UnsafeCell !!!
-    fn set_finished(&self) {
-        self.finished.store(true, Ordering::Relaxed);
-    }
-
-    fn is_finished(&self) -> bool {
-        self.finished.load(Ordering::Relaxed)
-    }
 }
 
 fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F) -> Result<JoinHandle<T>, Error> {
     let read_internals = Arc::new(ThreadInternals::new());
+    let read_finished = Arc::new(AtomicBool::new(false));
+    
     let write_internals = read_internals.clone();
+    let write_finished = read_finished.clone();
+    
     let main = move || {
         // TODO: Remove the panics and find a better solution!
         let old_id_state = THREAD_ID
@@ -126,8 +119,8 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F
         }
 
         // Finish thread operation
-        write_internals.set_finished();
-        drop(write_internals); // We drop explicitly here just to make clearer whats going on ...
+        drop(write_internals); // We drop explicitly here to decrement the arc count on the result
+        write_finished.store(true, Ordering::Relaxed);
     };
 
     let main = Box::new(main);
@@ -150,6 +143,7 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F
     Ok(JoinHandle {
         native: thread,
         internals: read_internals,
+        finished: read_finished
     })
 }
 

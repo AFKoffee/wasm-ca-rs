@@ -1,8 +1,7 @@
 use std::sync::LazyLock;
 
 use js_sys::{Array, Uint8Array};
-use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
-use web_sys::DedicatedWorkerGlobalScope;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::error::Error;
 
@@ -96,11 +95,3 @@ fn execute_work(f_ptr: usize) {
     let f = unsafe { Box::from_raw(f_ptr as *mut Work) };
     f.execute();
 }
-
-/*impl Drop for WorkerHandle {
-    fn drop(&mut self) {
-        // TODO: Thread Local Storage should be deinitialized manually ...
-        // TODO: This disables threads from running in detached state
-        self.worker.terminate();
-    }
-}*/

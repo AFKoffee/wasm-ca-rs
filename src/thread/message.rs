@@ -54,19 +54,3 @@ impl WorkerMessage {
         }
     }
 }
-
-pub enum MsgFromWorker {
-    Close,
-}
-
-impl MsgFromWorker {
-    pub fn try_from_js(msg: JsValue) -> Result<Self, JsValue> {
-        let ty: String = Reflect::get(&msg, &JsValue::from_str("type"))?
-            .dyn_into::<JsString>()?
-            .into();
-        match ty.as_str() {
-            "close" => Ok(MsgFromWorker::Close),
-            _ => panic!("Message from worker had an unknown type!"),
-        }
-    }
-}
