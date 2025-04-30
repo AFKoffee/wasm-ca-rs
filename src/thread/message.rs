@@ -1,16 +1,17 @@
 use js_sys::{BigInt, JsString, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 
-pub enum MsgToWorker {
+pub enum WorkerMessage {
     Init { f_ptr: usize },
+    Close
 }
 
-impl MsgToWorker {
+impl WorkerMessage {
     pub fn try_to_js(self) -> Result<JsValue, JsValue> {
         let msg = Object::new();
 
         match self {
-            MsgToWorker::Init { f_ptr } => {
+            WorkerMessage::Init { f_ptr } => {
                 Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("init"))?;
                 
                 /*if let Some(location) = web_sys::Document::new()?.location() {
@@ -28,6 +29,9 @@ impl MsgToWorker {
                 Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
                 Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
                 Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
+            },
+            WorkerMessage::Close => {
+                Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("close"))?;
             }
         };
 
@@ -43,8 +47,9 @@ impl MsgToWorker {
             "init" => {
                 let addr = Reflect::get(&msg, &JsValue::from_str("task"))?
                     .dyn_into::<BigInt>()?;
-                Ok(MsgToWorker::Init { f_ptr: u64::try_from(addr)? as usize })
+                Ok(WorkerMessage::Init { f_ptr: u64::try_from(addr)? as usize })
             },
+            "close" => Ok(WorkerMessage::Close),
             _ => panic!("Message from worker had an unknown type!"),
         }
     }

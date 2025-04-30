@@ -8,7 +8,12 @@ self.onmessage = async event => {
     
     let {default: init} = await import('http://localhost:8000/pkg/playground.js');
     let wasm = await init(module, memory);
-    wasm.handle_msg({type, task})
+    if (type == "close") {
+        wasm.__wbindgen_thread_destroy(); // Deallocate TLS and thread stack
+        self.close();
+    } else {
+        wasm.handle_msg({type, task})
+    }
 
     console.log("JScript: Worker ", thread_id, " finished its job!");
 }

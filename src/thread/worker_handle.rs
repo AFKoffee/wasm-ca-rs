@@ -1,11 +1,12 @@
 use std::sync::LazyLock;
 
 use js_sys::{Array, Uint8Array};
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
+use web_sys::DedicatedWorkerGlobalScope;
 
 use crate::error::Error;
 
-use super::message::MsgToWorker;
+use super::message::WorkerMessage;
 
 static WORKER_URL: LazyLock<String> = LazyLock::new(|| {
     let js = include_str!("worker.js");
@@ -62,7 +63,7 @@ impl WorkerHandle {
         // Todo: Properly deallocate the f_ptr in case of an error!
         self.worker
             .post_message(
-                &MsgToWorker::Init {
+                &WorkerMessage::Init {
                     f_ptr: Box::into_raw(Box::new(Work::new(f))) as usize,
                 }
                 .try_to_js()
@@ -71,16 +72,22 @@ impl WorkerHandle {
             .map_err(Error::from)
     }
 
-    pub fn terminate(self) {
-        // TODO: Thread Local Storage should be deinitialized manually ...
-        self.worker.terminate();
+    pub fn terminate(self) -> Result<(), Error> {
+        self.worker
+            .post_message(
+                &WorkerMessage::Close
+                    .try_to_js()
+                    .map_err(Error::from)?
+            )
+            .map_err(Error::from)
     }
 }
 
 #[wasm_bindgen(js_name = "handle_msg")]
 pub fn handle_js_message(msg: JsValue) -> Result<(), JsValue> {
-    match MsgToWorker::try_from_js(msg)? {
-        MsgToWorker::Init {f_ptr} => execute_work(f_ptr),
+    match WorkerMessage::try_from_js(msg)? {
+        WorkerMessage::Init {f_ptr} => execute_work(f_ptr),
+        WorkerMessage::Close => () // Noop, because this msg is handled in JS,
     }
     Ok(())
 }
