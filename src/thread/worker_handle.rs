@@ -1,24 +1,8 @@
-use std::sync::LazyLock;
-
-use js_sys::{Array, Uint8Array};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::error::Error;
 
-use super::message::WorkerMessage;
-
-static WORKER_URL: LazyLock<String> = LazyLock::new(|| {
-    let js = include_str!("worker.js");
-    let options = web_sys::BlobPropertyBag::new();
-    options.set_type("application/javascript");
-    let blob = web_sys::Blob::new_with_u8_slice_sequence_and_options(
-        Array::from_iter([Uint8Array::from(js.as_bytes())]).as_ref(),
-        &options,
-    )
-    .unwrap();
-
-    web_sys::Url::create_object_url_with_blob(&blob).unwrap()
-});
+use super::{message::WorkerMessage, url::get_worker_url};
 
 struct Work {
     func: Box<dyn FnOnce() + Send + 'static>,
@@ -46,7 +30,7 @@ impl WorkerHandle {
         options.set_type(web_sys::WorkerType::Module);
 
         let worker =
-            web_sys::Worker::new_with_options(&WORKER_URL, &options).map_err(Error::from)?;
+            web_sys::Worker::new_with_options(get_worker_url(), &options).map_err(Error::from)?;
 
         let handle = WorkerHandle { worker };
 

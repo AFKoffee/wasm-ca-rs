@@ -78,4 +78,8 @@ function finish_unlock(thread_id, lock_id) {
     console.log("Thread ", thread_id, " finished to release lock ", lock_id);
 }
 
-export {/*thread_spawn, */start_lock, finish_lock, start_unlock, finish_unlock};
+function get_origin() {
+    return self.location.origin;
+}
+
+export {/*thread_spawn, */start_lock, finish_lock, start_unlock, finish_unlock, get_origin};

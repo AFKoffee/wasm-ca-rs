@@ -5,8 +5,8 @@ console.log("JScript: initializing standalone worker")
 let wasm = undefined;
 self.onmessage = async event => {
     if (event.data.type == "init") {
-        let {default: init} = await import('http://localhost:8000/pkg/playground.js');
-        let {type, /*url,*/ module, memory, task} = event.data;
+        let {type, url, module, memory, task} = event.data;
+        let {default: init} = await import(url);
         wasm = await init(module, memory);
         wasm.handle_msg({type, task})
     } else if (!wasm) {

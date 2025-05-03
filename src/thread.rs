@@ -13,7 +13,12 @@ use worker_handle::WorkerHandle;
 use crate::{console_log, error::Error};
 
 mod message;
+mod url;
 mod worker_handle;
+
+// TODO: Reevaluate if this export should maybe be removed such that
+// it is only aviable via javascript.
+pub use url::set_bindgen_url_suffix_js as set_bindgen_url_suffix;
 
 static THREAD_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 
