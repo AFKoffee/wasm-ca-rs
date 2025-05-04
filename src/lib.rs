@@ -1,3 +1,4 @@
+mod wasm_abi;
 mod error;
 pub mod mutex;
 pub mod thread;

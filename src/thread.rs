@@ -10,7 +10,7 @@ use std::{
 
 use worker_handle::WorkerHandle;
 
-use crate::{console_log, error::Error};
+use crate::{console_log, error::Error, wasm_abi};
 
 mod message;
 mod url;
@@ -43,6 +43,8 @@ impl<T> JoinHandle<T> {
             if let Some(result) = internals_mut.take_result() {
                 // Terminate the WebWorker (has to be done manually)
                 self.native.terminate().expect("Could not terminate worker!");
+                
+                wasm_abi::join_thread(internals_mut.tid());
 
                 result
             } else {
@@ -144,6 +146,9 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F
 
     
     let thread = WorkerHandle::spawn()?;
+
+    wasm_abi::spawn_thread(read_internals.tid());
+
     thread.run(main)?;
     Ok(JoinHandle {
         native: thread,

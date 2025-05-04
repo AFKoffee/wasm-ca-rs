@@ -3,24 +3,7 @@ use parking_lot::{
     RawMutex,
 };
 
-mod lock_wasm_abi {
-    use wasm_bindgen::prelude::*;
-
-    #[wasm_bindgen(module = "/wasm_ca.js")]
-    extern "C" {
-        #[wasm_bindgen]
-        pub fn start_lock(thread_id: u32, lock_id: usize);
-
-        #[wasm_bindgen]
-        pub fn finish_lock(thread_id: u32, lock_id: usize);
-
-        #[wasm_bindgen]
-        pub fn start_unlock(thread_id: u32, lock_id: usize);
-
-        #[wasm_bindgen]
-        pub fn finish_unlock(thread_id: u32, lock_id: usize);
-    }
-}
+use crate::wasm_abi;
 
 pub struct TracingRawMutex {
     inner: RawMutex,
@@ -35,11 +18,11 @@ unsafe impl lock_api::RawMutex for TracingRawMutex {
     type GuardMarker = <parking_lot::RawMutex as parking_lot::lock_api::RawMutex>::GuardMarker;
 
     fn lock(&self) {
-        lock_wasm_abi::start_lock(crate::thread::thread_id(), self as *const _ as usize);
+        wasm_abi::start_lock(self as *const _ as usize);
 
         self.inner.lock();
 
-        lock_wasm_abi::finish_lock(crate::thread::thread_id(), self as *const _ as usize);
+        wasm_abi::finish_lock(self as *const _ as usize);
     }
 
     fn try_lock(&self) -> bool {
@@ -47,11 +30,11 @@ unsafe impl lock_api::RawMutex for TracingRawMutex {
     }
 
     unsafe fn unlock(&self) {
-        lock_wasm_abi::start_unlock(crate::thread::thread_id(), self as *const _ as usize);
+        wasm_abi::start_unlock(self as *const _ as usize);
 
         self.inner.unlock();
 
-        lock_wasm_abi::finish_unlock(crate::thread::thread_id(), self as *const _ as usize);
+        wasm_abi::finish_unlock(self as *const _ as usize);
     }
 }
 
