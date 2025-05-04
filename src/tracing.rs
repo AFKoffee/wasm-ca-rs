@@ -29,11 +29,12 @@ static TRACE: TracingMutex<Vec<Event>> = TracingMutex::new(Vec::new());
 
 #[inline]
 pub fn add_event(op: Op, loc: (usize, usize)) {
-    TRACE.lock().push(Event {
+    let event = Event {
         t: thread::thread_id(),
         op,
         loc,
-    });
+    };
+    TRACE.lock().push(event);
 }
 
 #[wasm_bindgen]
