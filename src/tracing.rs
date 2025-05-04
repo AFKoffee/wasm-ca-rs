@@ -1,7 +1,8 @@
 use js_sys::{Array, Uint8Array};
-use wasm_bindgen::prelude::wasm_bindgen;
+use parking_lot::Mutex;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{console_log, mutex::TracingMutex, thread};
+use crate::{console_log, thread};
 
 pub enum Op {
     Read { addr: usize, n: usize },
@@ -21,11 +22,11 @@ struct Event {
 
 impl Event {
     fn to_binary(&self) -> [u8; 8] {
-        todo!()
+        [0; 8]
     }
 }
 
-static TRACE: TracingMutex<Vec<Event>> = TracingMutex::new(Vec::new());
+static TRACE: Mutex<Vec<Event>> = Mutex::new(Vec::new());
 
 #[inline]
 pub fn add_event(op: Op, loc: (usize, usize)) {
@@ -38,7 +39,11 @@ pub fn add_event(op: Op, loc: (usize, usize)) {
 }
 
 #[wasm_bindgen]
-pub fn generate_trace_download_url() -> String {
+pub fn generate_trace_download_url(callback: js_sys::Function) {
+    // Rewrite this to use a designated worker message which posts
+    // the url to the main thread when finished generating
+
+    // TODO: Evaluate if it is ok to use a "traced thread" here ...
     let thread = thread::thread_spawn(|| {
         let mut output = Vec::new();
 
@@ -50,13 +55,15 @@ pub fn generate_trace_download_url() -> String {
     });
 
     // TODO: Somehow solve this with futures such that the main thread will not block busy waiting
-    let output = match thread.join() {
+    /*let output = match thread.join() {
         Ok(out) => out,
         Err(_) => {
             console_log!("Failed to generate binary trace. Returning empty vector ...");
             Vec::new()
         }
-    };
+    };*/
+    
+    let output = Vec::new();
 
     let options = web_sys::BlobPropertyBag::new();
     options.set_type("application/octet-stream");
@@ -66,5 +73,6 @@ pub fn generate_trace_download_url() -> String {
     )
     .unwrap();
 
-    web_sys::Url::create_object_url_with_blob(&blob).unwrap()
+    let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+    let _ = callback.call1(&JsValue::null(), &JsValue::from_str(&url));
 }
