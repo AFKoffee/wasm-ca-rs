@@ -10,9 +10,7 @@ struct Work {
 
 impl Work {
     fn new<F: FnOnce() + Send + 'static>(f: F) -> Self {
-        Self {
-            func: Box::new(f)
-        }
+        Self { func: Box::new(f) }
     }
 
     fn execute(self) {
@@ -57,11 +55,7 @@ impl WorkerHandle {
 
     pub fn terminate(self) -> Result<(), Error> {
         self.worker
-            .post_message(
-                &WorkerMessage::Close
-                    .try_to_js()
-                    .map_err(Error::from)?
-            )
+            .post_message(&WorkerMessage::Close.try_to_js().map_err(Error::from)?)
             .map_err(Error::from)
     }
 }
@@ -69,8 +63,8 @@ impl WorkerHandle {
 #[wasm_bindgen(js_name = "handle_msg")]
 pub fn handle_js_message(msg: JsValue) -> Result<(), JsValue> {
     match WorkerMessage::try_from_js(msg)? {
-        WorkerMessage::Init {f_ptr} => execute_work(f_ptr),
-        WorkerMessage::Close => () // Noop, because this msg is handled in JS,
+        WorkerMessage::Init { f_ptr } => execute_work(f_ptr),
+        WorkerMessage::Close => (), // Noop, because this msg is handled in JS,
     }
     Ok(())
 }

@@ -5,7 +5,7 @@ use super::url::get_bindgen_url;
 
 pub enum WorkerMessage {
     Init { f_ptr: usize },
-    Close
+    Close,
 }
 
 impl WorkerMessage {
@@ -15,13 +15,21 @@ impl WorkerMessage {
         match self {
             WorkerMessage::Init { f_ptr } => {
                 Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("init"))?;
-                Reflect::set(&msg, &JsValue::from_str("url"), &JsValue::from_str(&get_bindgen_url()))?;
+                Reflect::set(
+                    &msg,
+                    &JsValue::from_str("url"),
+                    &JsValue::from_str(&get_bindgen_url()),
+                )?;
                 Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
                 Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
                 Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
-            },
+            }
             WorkerMessage::Close => {
-                Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("close"))?;
+                Reflect::set(
+                    &msg,
+                    &JsValue::from_str("type"),
+                    &JsValue::from_str("close"),
+                )?;
             }
         };
 
@@ -35,10 +43,11 @@ impl WorkerMessage {
 
         match ty.as_str() {
             "init" => {
-                let addr = Reflect::get(&msg, &JsValue::from_str("task"))?
-                    .dyn_into::<BigInt>()?;
-                Ok(WorkerMessage::Init { f_ptr: u64::try_from(addr)? as usize })
-            },
+                let addr = Reflect::get(&msg, &JsValue::from_str("task"))?.dyn_into::<BigInt>()?;
+                Ok(WorkerMessage::Init {
+                    f_ptr: u64::try_from(addr)? as usize,
+                })
+            }
             "close" => Ok(WorkerMessage::Close),
             _ => panic!("Message from worker had an unknown type!"),
         }

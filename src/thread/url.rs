@@ -19,14 +19,9 @@ pub fn set_bindgen_url_suffix_js(suffix: String) {
 
 pub fn get_bindgen_url() -> String {
     let mut url = get_origin();
-    
-    url.push_str(
-BINDGEN_URL_SUFFIX
-            .lock()
-            .as_deref()
-            .unwrap_or("/index.js")
-    );
-    
+
+    url.push_str(BINDGEN_URL_SUFFIX.lock().as_deref().unwrap_or("/index.js"));
+
     url
 }
 

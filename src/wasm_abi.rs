@@ -4,7 +4,7 @@ use crate::tracing::{self, Op};
 pub extern "C" fn start_lock(_lock_id: usize) {
     // Shold resolve to a call to `request_event`
     request_event(_lock_id, 0, 0);
-}  
+}
 
 #[no_mangle]
 pub extern "C" fn finish_lock(_lock_id: usize) {

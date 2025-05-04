@@ -14,7 +14,7 @@ pub enum Op {
 }
 
 struct Event {
-    t: u32,            // ID of the executing thread
+    t: u32,              // ID of the executing thread
     op: Op,              // executed operation
     loc: (usize, usize), // location in the program: (function_idx, instr_idx)
 }
@@ -29,10 +29,10 @@ static TRACE: TracingMutex<Vec<Event>> = TracingMutex::new(Vec::new());
 
 #[inline]
 pub fn add_event(op: Op, loc: (usize, usize)) {
-    TRACE.lock().push(Event { 
-        t: thread::thread_id(), 
-        op, 
-        loc 
+    TRACE.lock().push(Event {
+        t: thread::thread_id(),
+        op,
+        loc,
     });
 }
 
@@ -40,7 +40,7 @@ pub fn add_event(op: Op, loc: (usize, usize)) {
 pub fn generate_trace_download_url() -> String {
     let thread = thread::thread_spawn(|| {
         let mut output = Vec::new();
-    
+
         for e in TRACE.lock().iter() {
             output.extend(e.to_binary());
         }

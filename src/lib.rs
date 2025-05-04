@@ -1,8 +1,8 @@
-mod wasm_abi;
 mod error;
 pub mod mutex;
 pub mod thread;
 mod tracing;
+mod wasm_abi;
 
 use wasm_bindgen::prelude::*;
 
@@ -16,7 +16,7 @@ pub(crate) use console_log;
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
-    
+
     #[wasm_bindgen(js_namespace = console, js_name = log)]
     fn logv(x: &JsValue);
 }
