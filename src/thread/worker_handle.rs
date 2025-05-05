@@ -1,4 +1,6 @@
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use js_sys::Function;
+use wasm_bindgen::{prelude::{wasm_bindgen, Closure}, JsCast, JsValue};
+use web_sys::MessageEvent;
 
 use crate::error::Error;
 
@@ -53,6 +55,23 @@ impl WorkerHandle {
             .map_err(Error::from)
     }
 
+    pub fn set_onmessage(&mut self, callback: Function) {
+        let event_handler = Closure::<dyn FnMut(_)>::new(move |event: MessageEvent|  {
+            match WorkerMessage::try_from_js(event.data()) {
+                Ok(msg) => if let WorkerMessage::Url { url } = msg {
+                    let _ = callback.call1(&JsValue::null(), &JsValue::from_str(&url));
+                },
+                Err(_) => todo!(),
+            }
+        });
+        let event_handler = Box::new(event_handler);
+        let js_callback = event_handler.as_ref().as_ref().unchecked_ref();
+        self.worker.set_onmessage(Some(js_callback));
+
+        // FIXME: This leaks memory to stop the closure from being deallocated, which raises an error in JavaScript
+        let _ = Box::into_raw(event_handler);
+    }
+
     pub fn terminate(self) -> Result<(), Error> {
         self.worker
             .post_message(&WorkerMessage::Close.try_to_js().map_err(Error::from)?)
@@ -65,6 +84,7 @@ pub fn handle_js_message(msg: JsValue) -> Result<(), JsValue> {
     match WorkerMessage::try_from_js(msg)? {
         WorkerMessage::Init { f_ptr } => execute_work(f_ptr),
         WorkerMessage::Close => (), // Noop, because this msg is handled in JS,
+        WorkerMessage::Url { url: _ } => () // This serves only for internal onmessage callbacks
     }
     Ok(())
 }

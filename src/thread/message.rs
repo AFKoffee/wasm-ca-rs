@@ -6,6 +6,7 @@ use super::url::get_bindgen_url;
 pub enum WorkerMessage {
     Init { f_ptr: usize },
     Close,
+    Url {url: String }
 }
 
 impl WorkerMessage {
@@ -30,6 +31,14 @@ impl WorkerMessage {
                     &JsValue::from_str("type"),
                     &JsValue::from_str("close"),
                 )?;
+            },
+            WorkerMessage::Url { url } => {
+                Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("url"))?;
+                Reflect::set(
+                    &msg,
+                    &JsValue::from_str("url"),
+                    &JsValue::from_str(&url),
+                )?;
             }
         };
 
@@ -49,6 +58,7 @@ impl WorkerMessage {
                 })
             }
             "close" => Ok(WorkerMessage::Close),
+            "url" => Ok(WorkerMessage::Url { url: Reflect::get(&msg, &JsValue::from_str("url"))?.dyn_into::<JsString>()?.into() }),
             _ => panic!("Message from worker had an unknown type!"),
         }
     }

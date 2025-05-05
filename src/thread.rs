@@ -12,9 +12,9 @@ use worker_handle::WorkerHandle;
 
 use crate::{console_log, error::Error, wasm_abi};
 
-mod message;
+pub(crate) mod message;
 mod url;
-mod worker_handle;
+pub(crate) mod worker_handle;
 
 // TODO: Reevaluate if this export should maybe be removed such that
 // it is only aviable via javascript.
