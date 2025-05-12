@@ -1,9 +1,12 @@
 use js_sys::{Array, Uint8Array};
 use parking_lot::Mutex;
+use rapidbin::BinaryTraceBuilder;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use web_sys::DedicatedWorkerGlobalScope;
 
-use crate::{console_log, thread::{self, message::WorkerMessage, worker_handle::{self, WorkerHandle}}};
+use crate::thread::{self, message::WorkerMessage, worker_handle::{WorkerHandle}};
+
+mod rapidbin;
 
 pub enum Op {
     Read { addr: usize, n: usize },
@@ -15,16 +18,24 @@ pub enum Op {
     Join { tid: u32 },
 }
 
+impl Op {
+    fn id(&self) -> u8 {
+        match self {
+            Op::Read { addr: _, n: _ } => 2,
+            Op::Write { addr: _, n: _ } => 3,
+            Op::Aquire { lock: _ } => 0,
+            Op::Request { lock: _ } => 8,
+            Op::Release { lock: _ } => 1,
+            Op::Fork { tid: _ } => 4,
+            Op::Join { tid: _ } => 5,
+        }
+    }
+}
+
 struct Event {
     t: u32,              // ID of the executing thread
     op: Op,              // executed operation
     loc: (usize, usize), // location in the program: (function_idx, instr_idx)
-}
-
-impl Event {
-    fn to_binary(&self) -> [u8; 8] {
-        [0; 8]
-    }
 }
 
 static TRACE: Mutex<Vec<Event>> = Mutex::new(Vec::new());
@@ -44,16 +55,16 @@ pub fn generate_trace_download_url(callback: js_sys::Function) -> Result<(), JsV
     let mut worker = WorkerHandle::spawn().map_err(|e| JsValue::from_str(&format!("{e}")))?;
     worker.set_onmessage(callback);
     worker.run(move || {
-        let mut output = Vec::new();
+        let mut output = BinaryTraceBuilder::new();
 
         for e in TRACE.lock().iter() {
-            output.extend(e.to_binary());
+            output.push_event(e);
         }
 
         let options = web_sys::BlobPropertyBag::new();
         options.set_type("application/octet-stream");
         let blob = web_sys::Blob::new_with_u8_slice_sequence_and_options(
-            Array::from_iter([Uint8Array::from(output.as_slice())]).as_ref(),
+            Array::from_iter([Uint8Array::from(output.build().as_slice())]).as_ref(),
             &options,
         )
         .unwrap();
