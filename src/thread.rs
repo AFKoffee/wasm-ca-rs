@@ -10,11 +10,11 @@ use std::{
 
 use worker_handle::WorkerHandle;
 
-use crate::{console_log, error::Error};
+use crate::{console_log, error::Error, wasm_abi};
 
-mod message;
+pub(crate) mod message;
 mod url;
-mod worker_handle;
+pub(crate) mod worker_handle;
 
 // TODO: Reevaluate if this export should maybe be removed such that
 // it is only aviable via javascript.
@@ -42,7 +42,11 @@ impl<T> JoinHandle<T> {
         if let Some(internals_mut) = Arc::get_mut(&mut self.internals) {
             if let Some(result) = internals_mut.take_result() {
                 // Terminate the WebWorker (has to be done manually)
-                self.native.terminate().expect("Could not terminate worker!");
+                self.native
+                    .terminate()
+                    .expect("Could not terminate worker!");
+
+                wasm_abi::join_thread(internals_mut.tid());
 
                 result
             } else {
@@ -96,13 +100,15 @@ impl<T> ThreadInternals<T> {
     }
 }
 
-fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F) -> Result<JoinHandle<T>, Error> {
+fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(
+    f: F,
+) -> Result<JoinHandle<T>, Error> {
     let read_internals = Arc::new(ThreadInternals::new());
     let read_finished = Arc::new(AtomicBool::new(false));
-    
+
     let write_internals = read_internals.clone();
     let write_finished = read_finished.clone();
-    
+
     let main = move || {
         // TODO: Remove the panics and find a better solution!
         let old_id_state = THREAD_ID
@@ -132,7 +138,7 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F
     // SAFETY: dynamic size and alignment of the Box remain the same. The lifetime change is
     // justified, because the closure is passed over a ffi-boundary (in this case to JScript)
     // into a WebWorker, where there is no way to enforce lifetimes of the closure.
-    // 
+    //
     // The caller of this function has to ensure, that the thread will not outlive any variables
     // bound by the closure (or the reference to the closure itself). This is enforced statically
     // by the 'static trait bound of the public `thread_spawn()` function.
@@ -140,15 +146,17 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F
     // The thread execution mechanism inside the WebWorker has to ensure, that there are no
     // references to the closure after the thread has terminated (when `join()` returns).
     let main =
-            unsafe { Box::from_raw(Box::into_raw(main) as *mut (dyn FnOnce() + Send + 'static)) };
+        unsafe { Box::from_raw(Box::into_raw(main) as *mut (dyn FnOnce() + Send + 'static)) };
 
-    
     let thread = WorkerHandle::spawn()?;
+
+    wasm_abi::spawn_thread(read_internals.tid());
+
     thread.run(main)?;
     Ok(JoinHandle {
         native: thread,
         internals: read_internals,
-        finished: read_finished
+        finished: read_finished,
     })
 }
 
