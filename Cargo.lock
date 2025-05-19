@@ -214,9 +214,9 @@ dependencies = [
  "js-sys",
  "parking_lot",
  "wasm-bindgen",
- "wasm-tracing 0.1.0 (git+https://github.com/AFKoffee/wasm-ca-rs.git?branch=independent-tracing)",
+ "wasm-tracing",
  "web-sys",
- "web-worker-mgmt 0.1.0 (git+https://github.com/AFKoffee/wasm-ca-rs.git?branch=independent-tracing)",
+ "web-worker-mgmt",
 ]
 
 [[package]]
@@ -227,19 +227,7 @@ dependencies = [
  "parking_lot",
  "wasm-bindgen",
  "web-sys",
- "web-worker-mgmt 0.1.0",
-]
-
-[[package]]
-name = "wasm-tracing"
-version = "0.1.0"
-source = "git+https://github.com/AFKoffee/wasm-ca-rs.git?branch=independent-tracing#d15faa5e38cc5608c991f970433e28868923c2fa"
-dependencies = [
- "js-sys",
- "parking_lot",
- "wasm-bindgen",
- "web-sys",
- "web-worker-mgmt 0.1.0 (git+https://github.com/AFKoffee/wasm-ca-rs.git?branch=independent-tracing)",
+ "web-worker-mgmt",
 ]
 
 [[package]]
@@ -255,17 +243,6 @@ dependencies = [
 [[package]]
 name = "web-worker-mgmt"
 version = "0.1.0"
-dependencies = [
- "js-sys",
- "parking_lot",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
-name = "web-worker-mgmt"
-version = "0.1.0"
-source = "git+https://github.com/AFKoffee/wasm-ca-rs.git?branch=independent-tracing#d15faa5e38cc5608c991f970433e28868923c2fa"
 dependencies = [
  "js-sys",
  "parking_lot",

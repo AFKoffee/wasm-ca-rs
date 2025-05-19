@@ -16,8 +16,8 @@ crate-type = ["cdylib", "rlib"]
 js-sys = "0.3.77"
 parking_lot = { version = "0.12.3", features = ["nightly"] }
 wasm-bindgen = { version = "0.2.100" }
-web-worker-mgmt = { git = "https://github.com/AFKoffee/wasm-ca-rs.git", branch = "independent-tracing"}
-wasm-tracing = { git = "https://github.com/AFKoffee/wasm-ca-rs.git", branch = "independent-tracing"}
+web-worker-mgmt = { path = "./crates/web-worker-mgmt" }
+wasm-tracing = { path = "./crates/wasm-tracing" }
 
 [dependencies.web-sys]
 version = "0.3.77"
