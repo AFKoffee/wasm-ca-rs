@@ -5,9 +5,10 @@ console.log("JScript: initializing standalone worker")
 let wasm = undefined;
 self.onmessage = async event => {
     if (event.data.type == "init") {
-        let {type, url, module, memory, task} = event.data;
+        let {type, url, module, memory, task, tracing} = event.data;
         let {default: init} = await import(url);
         wasm = await init(module, memory);
+        await wasm.setup_tracing(tracing);
         wasm.handle_msg({type, task})
     } else if (!wasm) {
         console.warn("Wasm module has not been initialized. Ignoring message ...")

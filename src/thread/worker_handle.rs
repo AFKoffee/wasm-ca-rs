@@ -84,7 +84,7 @@ pub fn handle_js_message(msg: JsValue) -> Result<(), JsValue> {
     match WorkerMessage::try_from_js(msg)? {
         WorkerMessage::Init { f_ptr } => execute_work(f_ptr),
         WorkerMessage::Close => (), // Noop, because this msg is handled in JS,
-        WorkerMessage::Url { url: _ } => () // This serves only for internal onmessage callbacks
+        WorkerMessage::Url { url: _ } => (), // This serves only for internal onmessage callbacks
     }
     Ok(())
 }

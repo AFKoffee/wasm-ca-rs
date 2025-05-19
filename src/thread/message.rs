@@ -1,12 +1,14 @@
 use js_sys::{BigInt, JsString, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 
+use crate::tracing::get_tracing_memory;
+
 use super::url::get_bindgen_url;
 
 pub enum WorkerMessage {
     Init { f_ptr: usize },
     Close,
-    Url {url: String }
+    Url {url: String },
 }
 
 impl WorkerMessage {
@@ -24,6 +26,7 @@ impl WorkerMessage {
                 Reflect::set(&msg, &JsValue::from_str("module"), &wasm_bindgen::module())?;
                 Reflect::set(&msg, &JsValue::from_str("memory"), &wasm_bindgen::memory())?;
                 Reflect::set(&msg, &JsValue::from_str("task"), &BigInt::from(f_ptr))?;
+                Reflect::set(&msg, &JsValue::from_str("tracing"), &get_tracing_memory())?;
             }
             WorkerMessage::Close => {
                 Reflect::set(
@@ -54,7 +57,7 @@ impl WorkerMessage {
             "init" => {
                 let addr = Reflect::get(&msg, &JsValue::from_str("task"))?.dyn_into::<BigInt>()?;
                 Ok(WorkerMessage::Init {
-                    f_ptr: u64::try_from(addr)? as usize,
+                    f_ptr: u64::try_from(addr)? as usize
                 })
             }
             "close" => Ok(WorkerMessage::Close),

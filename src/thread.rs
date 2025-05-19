@@ -8,12 +8,16 @@ use std::{
     },
 };
 
-use crate::{console_log, wasm_abi};
+use crate::{console_log, error::Error, wasm_abi};
+
+pub mod url;
+pub (crate) mod worker_handle;
+pub (crate) mod message;
 
 // TODO: Reevaluate if this export should maybe be removed such that
 // it is only aviable via javascript.
-pub use web_worker_mgmt::url::set_bindgen_url_suffix_js as set_bindgen_url_suffix;
-use web_worker_mgmt::{error::Error, worker_handle::WorkerHandle};
+pub use url::set_bindgen_url_suffix_js as set_bindgen_url_suffix;
+use worker_handle::WorkerHandle;
 
 static THREAD_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -156,7 +160,13 @@ fn thread_spawn_inner<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(
 }
 
 pub fn thread_spawn<F: FnOnce() -> T + Send + 'static, T: Send + 'static>(f: F) -> JoinHandle<T> {
-    thread_spawn_inner(f).expect("Thread creation failed!")
+    match thread_spawn_inner(f) {
+        Ok(handle) => handle,
+        Err(e) => {
+            console_log!("{e}");
+            panic!();
+        },
+    }
 }
 
 pub fn thread_id() -> u32 {

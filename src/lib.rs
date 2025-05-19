@@ -1,5 +1,7 @@
 pub mod mutex;
 pub mod thread;
+mod error;
+mod tracing;
 mod wasm_abi;
 
 use wasm_bindgen::prelude::*;
