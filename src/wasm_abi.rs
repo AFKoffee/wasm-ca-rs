@@ -1,4 +1,6 @@
-use crate::{console_log, tracing::{self, Op}};
+use wasm_tracing::Op;
+
+use crate::{console_log, thread};
 
 #[no_mangle]
 pub extern "C" fn start_lock(_lock_id: usize) {
@@ -38,41 +40,41 @@ pub extern "C" fn join_thread(_thread_id: u32) {
 #[no_mangle]
 pub extern "C" fn read_event(addr: usize, n: usize, fidx: usize, iidx: usize) {
     console_log!("Read Event: addr: {}, n: {}, fidx: {}, iidx: {}", addr, n, fidx, iidx);
-    tracing::add_event(Op::Read { addr, n }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Read { addr, n }, (fidx, iidx));
 }
 
 #[no_mangle]
 pub extern "C" fn write_event(addr: usize, n: usize, fidx: usize, iidx: usize) {
     console_log!("Write Event: addr: {}, n: {}, fidx: {}, iidx: {}", addr, n, fidx, iidx);
-    tracing::add_event(Op::Write { addr, n }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Write { addr, n }, (fidx, iidx));
 }
 
 #[no_mangle]
 pub extern "C" fn aquire_event(lock_id: usize, fidx: usize, iidx: usize) {
     console_log!("Aquire Event: lock: {}, fidx: {}, iidx: {}", lock_id, fidx, iidx);
-    tracing::add_event(Op::Aquire { lock: lock_id }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Aquire { lock: lock_id }, (fidx, iidx));
 }
 
 #[no_mangle]
 pub extern "C" fn request_event(lock_id: usize, fidx: usize, iidx: usize) {
     console_log!("Request Event: lock: {}, fidx: {}, iidx: {}", lock_id, fidx, iidx);
-    tracing::add_event(Op::Request { lock: lock_id }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Request { lock: lock_id }, (fidx, iidx));
 }
 
 #[no_mangle]
 pub extern "C" fn release_event(lock_id: usize, fidx: usize, iidx: usize) {
     console_log!("Release Event: lock: {}, fidx: {}, iidx: {}", lock_id, fidx, iidx);
-    tracing::add_event(Op::Release { lock: lock_id }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Release { lock: lock_id }, (fidx, iidx));
 }
 
 #[no_mangle]
 pub extern "C" fn fork_event(thread_id: u32, fidx: usize, iidx: usize) {
     console_log!("Fork Event: lock: {}, fidx: {}, iidx: {}", thread_id, fidx, iidx);
-    tracing::add_event(Op::Fork { tid: thread_id }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Fork { tid: thread_id }, (fidx, iidx));
 }
 
 #[no_mangle]
 pub extern "C" fn join_event(thread_id: u32, fidx: usize, iidx: usize) {
     console_log!("Join Event: lock: {}, fidx: {}, iidx: {}", thread_id, fidx, iidx);
-    tracing::add_event(Op::Join { tid: thread_id }, (fidx, iidx));
+    wasm_tracing::add_event(thread::thread_id(), Op::Join { tid: thread_id }, (fidx, iidx));
 }

@@ -214,7 +214,20 @@ dependencies = [
  "js-sys",
  "parking_lot",
  "wasm-bindgen",
+ "wasm-tracing",
  "web-sys",
+ "web-worker-mgmt",
+]
+
+[[package]]
+name = "wasm-tracing"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "parking_lot",
+ "wasm-bindgen",
+ "web-sys",
+ "web-worker-mgmt",
 ]
 
 [[package]]
@@ -225,6 +238,16 @@ checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "web-worker-mgmt"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "parking_lot",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

@@ -3,8 +3,7 @@ use parking_lot::Mutex;
 use rapidbin::BinaryTraceBuilder;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use web_sys::DedicatedWorkerGlobalScope;
-
-use crate::thread::{self, message::WorkerMessage, worker_handle::{WorkerHandle}};
+use web_worker_mgmt::{message::WorkerMessage, worker_handle::WorkerHandle};
 
 mod rapidbin;
 
@@ -41,9 +40,9 @@ struct Event {
 static TRACE: Mutex<Vec<Event>> = Mutex::new(Vec::new());
 
 #[inline]
-pub fn add_event(op: Op, loc: (usize, usize)) {
+pub fn add_event(t: u32, op: Op, loc: (usize, usize)) {
     let event = Event {
-        t: thread::thread_id(),
+        t,
         op,
         loc,
     };

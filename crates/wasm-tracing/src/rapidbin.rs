@@ -153,7 +153,7 @@ impl BinaryTraceBuilder {
 
 #[cfg(test)]
 mod test {
-    use crate::tracing::{Event, Op};
+    use crate::{Event, Op};
 
     use super::{BinaryTraceBuilder, THREAD_BIT_OFFSET, OP_BIT_OFFSET, DECOR_BIT_OFFSET, LOC_BIT_OFFSET};
 

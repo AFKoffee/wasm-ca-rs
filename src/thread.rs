@@ -8,17 +8,12 @@ use std::{
     },
 };
 
-use worker_handle::WorkerHandle;
-
-use crate::{console_log, error::Error, wasm_abi};
-
-pub(crate) mod message;
-mod url;
-pub(crate) mod worker_handle;
+use crate::{console_log, wasm_abi};
 
 // TODO: Reevaluate if this export should maybe be removed such that
 // it is only aviable via javascript.
-pub use url::set_bindgen_url_suffix_js as set_bindgen_url_suffix;
+pub use web_worker_mgmt::url::set_bindgen_url_suffix_js as set_bindgen_url_suffix;
+use web_worker_mgmt::{error::Error, worker_handle::WorkerHandle};
 
 static THREAD_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
 

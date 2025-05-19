@@ -1,0 +1,24 @@
+[package]
+name = "web-worker-mgmt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wasm-bindgen = { version = "0.2.100" }
+parking_lot = { version = "0.12.3", features = ["nightly"] }
+js-sys = "0.3.77"
+
+[dependencies.web-sys]
+version = "0.3.77"
+features = [
+    "Blob",
+    "BlobPropertyBag",
+    "DedicatedWorkerGlobalScope",
+    "Document",
+    "Location",
+    "MessageEvent",
+    "Url",
+    "Worker",
+    "WorkerOptions",
+    "WorkerType",
+]
