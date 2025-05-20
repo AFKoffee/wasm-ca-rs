@@ -18,11 +18,11 @@ unsafe impl lock_api::RawMutex for TracingRawMutex {
     type GuardMarker = <parking_lot::RawMutex as parking_lot::lock_api::RawMutex>::GuardMarker;
 
     fn lock(&self) {
-        wasm_abi::start_lock(self as *const _ as usize);
+        assert_eq!(1, wasm_abi::start_lock(self as *const _ as usize));
 
         self.inner.lock();
 
-        wasm_abi::finish_lock(self as *const _ as usize);
+        assert_eq!(1, wasm_abi::finish_lock(self as *const _ as usize));
     }
 
     fn try_lock(&self) -> bool {
@@ -30,11 +30,11 @@ unsafe impl lock_api::RawMutex for TracingRawMutex {
     }
 
     unsafe fn unlock(&self) {
-        wasm_abi::start_unlock(self as *const _ as usize);
+        assert_eq!(1, wasm_abi::start_unlock(self as *const _ as usize));
 
         self.inner.unlock();
 
-        wasm_abi::finish_unlock(self as *const _ as usize);
+        assert_eq!(1, wasm_abi::finish_unlock(self as *const _ as usize));
     }
 }
 

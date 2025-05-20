@@ -18,11 +18,83 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8ArrayMemory0().slice(ptr, ptr + len));
 }
 /**
+ * @param {number} id
+ */
+export function set_thread_id(id) {
+    wasm.set_thread_id(id);
+}
+
+/**
  * @returns {Uint8Array}
  */
 export function generate_binary_trace() {
     const ret = wasm.generate_binary_trace();
     return ret;
+}
+
+/**
+ * @param {number} addr
+ * @param {number} n
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function read_event(addr, n, fidx, iidx) {
+    wasm.read_event(addr, n, fidx, iidx);
+}
+
+/**
+ * @param {number} addr
+ * @param {number} n
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function write_event(addr, n, fidx, iidx) {
+    wasm.write_event(addr, n, fidx, iidx);
+}
+
+/**
+ * @param {number} lock_id
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function aquire_event(lock_id, fidx, iidx) {
+    wasm.aquire_event(lock_id, fidx, iidx);
+}
+
+/**
+ * @param {number} lock_id
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function request_event(lock_id, fidx, iidx) {
+    wasm.request_event(lock_id, fidx, iidx);
+}
+
+/**
+ * @param {number} lock_id
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function release_event(lock_id, fidx, iidx) {
+    wasm.release_event(lock_id, fidx, iidx);
+}
+
+/**
+ * @param {number} thread_id
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function fork_event(thread_id, fidx, iidx) {
+    wasm.fork_event(thread_id, fidx, iidx);
+}
+
+/**
+ * @param {number} thread_id
+ * @param {number} fidx
+ * @param {number} iidx
+ */
+export function join_event(thread_id, fidx, iidx) {
+    wasm.join_event(thread_id, fidx, iidx);
 }
 
 async function __wbg_load(module, imports) {
